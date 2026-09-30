@@ -281,6 +281,12 @@ module.exports = function initMenu(ctx) {
           if (typeof ctx.openDashboard === "function") ctx.openDashboard();
         },
       },
+      {
+        label: "消息中心",
+        click: () => {
+          if (typeof ctx.openMessageCenter === "function") ctx.openMessageCenter();
+        },
+      },
       buildPermissionAutomationMenuItem(),
     ];
 
@@ -509,6 +515,12 @@ module.exports = function initMenu(ctx) {
       {
         label: t("openRecap"),
         click: () => ctx.openSettingsWindow({ tab: "recap" }),
+      },
+      {
+        label: "消息中心",
+        click: () => {
+          if (typeof ctx.openMessageCenter === "function") ctx.openMessageCenter();
+        },
       },
       {
         label: t("newSession"),

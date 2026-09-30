@@ -151,6 +151,7 @@ const { createFeishuApprovalMigrationNudge } = require("./feishu-approval-migrat
 const { createTrayBalloonOwner } = require("./tray-balloon-owner");
 const initUpdateBubble = require("./update-bubble");
 const { registerUpdateBubbleIpc } = initUpdateBubble;
+const initNotify = require("./notify");
 const createSettingsAnimationOverridesMain = require("./settings-animation-overrides-main");
 const { registerSettingsAnimationOverridesIpc } = createSettingsAnimationOverridesMain;
 const createShortcutRuntime = require("./shortcut-runtime");
@@ -2184,6 +2185,13 @@ const _updateBubbleCtx = {
   clipboard,
 };
 const _updateBubble = initUpdateBubble(_updateBubbleCtx);
+
+// PetNotify 桌宠消息触达模块（独立自包含，不改动桌宠动画引擎）
+const _notify = initNotify({
+  configDir: app.getPath("userData"),
+  playSound,
+  logger: console,
+});
 const {
   showUpdateBubble,
   hideUpdateBubble,
@@ -4562,6 +4570,7 @@ const _menuCtx = {
   getActiveThemeCapabilities: () => themeRuntime.getActiveThemeCapabilities(),
   ensureUserThemesDir: () => themeLoader.ensureUserThemesDir(),
   openSettingsWindow: (options) => settingsWindowRuntime.open(options),
+  openMessageCenter: () => _notify.openMessageCenter(),
   showTutorial: () => _tutorial.open(),
 };
 const _menu = require("./menu")(_menuCtx);
@@ -5986,6 +5995,7 @@ if (!gotTheLock) {
     _server.cleanup();
     if (_lanWss) _lanWss.cleanup();
     _updateBubble.cleanup();
+    try { _notify.cleanup(); } catch {}
     if (displayedVisualProjection) displayedVisualProjection.dispose();
     try { recapRuntime.dispose(); } catch {}
     _state.cleanup();

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src data:;" />
+  <title>消息中心</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+      color: #1f2329;
+      background: #f5f6f8;
+    }
+
+    /* ---------- 登录页 ---------- */
+    #login {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #2b3a55 0%, #40557a 100%);
+    }
+    .login-card {
+      width: 360px;
+      background: #fff;
+      border-radius: 14px;
+      padding: 30px 28px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+    }
+    .login-card h1 { font-size: 20px; margin-bottom: 4px; }
+    .login-card p.sub { font-size: 12px; color: #8a9099; margin-bottom: 20px; }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 12px; color: #555; margin-bottom: 6px; }
+    .field input {
+      width: 100%;
+      padding: 9px 11px;
+      border: 1px solid #d8dbe0;
+      border-radius: 8px;
+      font-size: 13px;
+      outline: none;
+    }
+    .field input:focus { border-color: #409eff; }
+    .btn-primary {
+      width: 100%;
+      padding: 10px;
+      background: #3370ff;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .btn-primary:hover { background: #2860e1; }
+    .btn-primary:disabled { background: #9bb6f0; cursor: not-allowed; }
+    #loginError { color: #f53f3f; font-size: 12px; min-height: 16px; margin-top: 8px; }
+
+    /* ---------- 主界面 ---------- */
+    #app { display: none; height: 100%; flex-direction: column; }
+    header.topbar {
+      display: flex;
+      align-items: center;
+      padding: 0 18px;
+      height: 54px;
+      background: #fff;
+      border-bottom: 1px solid #ebedf0;
+      flex-shrink: 0;
+    }
+    header.topbar .brand { font-size: 16px; font-weight: 700; flex: 1; }
+    .conn-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+    .conn-dot.on { background: #23c343; }
+    .conn-dot.off { background: #f53f3f; }
+    #connText { font-size: 12px; color: #8a9099; margin-right: 14px; }
+    .user-chip { font-size: 13px; color: #333; margin-right: 12px; }
+
+    nav.tabs {
+      display: flex;
+      gap: 4px;
+      padding: 0 14px;
+      background: #fff;
+      border-bottom: 1px solid #ebedf0;
+      flex-shrink: 0;
+    }
+    nav.tabs button {
+      padding: 10px 16px;
+      background: none;
+      border: none;
+      font-size: 13px;
+      color: #555;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    nav.tabs button.active { color: #3370ff; border-bottom-color: #3370ff; font-weight: 600; }
+
+    main.content { flex: 1; overflow-y: auto; padding: 18px; }
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .toolbar { display: flex; gap: 8px; margin-bottom: 14px; align-items: center; }
+    .toolbar select, .toolbar input {
+      padding: 7px 10px; border: 1px solid #d8dbe0; border-radius: 8px; font-size: 13px; outline: none;
+    }
+    .toolbar .spacer { flex: 1; }
+    .btn {
+      padding: 7px 14px; border: 1px solid #d8dbe0; background: #fff; border-radius: 8px;
+      font-size: 13px; cursor: pointer; color: #333;
+    }
+    .btn:hover { border-color: #3370ff; color: #3370ff; }
+
+    /* 消息卡片 */
+    .msg {
+      background: #fff; border: 1px solid #ebedf0; border-radius: 10px; padding: 14px 16px; margin-bottom: 10px;
+    }
+    .msg .mhead { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .msg .topic { font-size: 11px; color: #8a9099; }
+    .tag { font-size: 10px; padding: 1px 8px; border-radius: 8px; }
+    .tag.prio { background: #e8f1ff; color: #3370ff; }
+    .tag.prio.HIGH { background: #fff3e0; color: #e6a23c; }
+    .tag.prio.URGENT { background: #fde8e8; color: #f53f3f; }
+    .tag.status { background: #f0f1f3; color: #666; }
+    .msg .mtitle { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+    .msg .mcontent { font-size: 13px; color: #555; line-height: 1.5; white-space: pre-wrap; }
+    .msg .mactions { margin-top: 10px; display: flex; gap: 8px; align-items: center; }
+    .msg .mtime { margin-left: auto; font-size: 11px; color: #a8acb3; }
+    .link-btn { color: #3370ff; font-size: 12px; cursor: pointer; background: none; border: none; }
+    .link-btn:hover { text-decoration: underline; }
+
+    /* 订阅 / 设置 */
+    .row-card {
+      background: #fff; border: 1px solid #ebedf0; border-radius: 10px; padding: 14px 16px; margin-bottom: 8px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .row-card .info { flex: 1; }
+    .row-card .info .t { font-size: 14px; font-weight: 600; }
+    .row-card .info .d { font-size: 12px; color: #8a9099; margin-top: 2px; }
+    .switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+    .switch .slider {
+      position: absolute; inset: 0; background: #d8dbe0; border-radius: 22px; transition: 0.2s; pointer-events: none;
+    }
+    .switch .slider::before {
+      content: ""; position: absolute; width: 18px; height: 18px; left: 2px; top: 2px;
+      background: #fff; border-radius: 50%; transition: 0.2s;
+    }
+    .switch input:checked + .slider { background: #3370ff; }
+    .switch input:checked + .slider::before { transform: translateX(18px); }
+
+    .setting-line { display: flex; align-items: center; padding: 14px 2px; }
+    .setting-line .label { flex: 1; font-size: 14px; }
+    .setting-line .desc { font-size: 12px; color: #8a9099; }
+
+    .empty { text-align: center; color: #a8acb3; font-size: 13px; padding: 40px 0; }
+
+    /* 详情弹窗 */
+    #modalMask {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); align-items: center; justify-content: center;
+    }
+    #modalMask.show { display: flex; }
+    .modal {
+      width: 480px; max-height: 70%; overflow-y: auto; background: #fff; border-radius: 12px; padding: 22px;
+    }
+    .modal h2 { font-size: 17px; margin-bottom: 10px; }
+    .modal pre {
+      background: #f6f7f9; border-radius: 8px; padding: 12px; font-size: 12px; white-space: pre-wrap;
+      word-break: break-all; margin-bottom: 12px;
+    }
+    .modal .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+  </style>
+</head>
+<body>
+  <!-- 登录 -->
+  <div id="login">
+    <div class="login-card">
+      <h1>PetNotify 消息中心</h1>
+      <p class="sub">使用通知账号登录，接收 Jenkins / AI Agent 等事件</p>
+      <div class="field">
+        <label>服务端地址</label>
+        <input id="serverUrl" value="http://127.0.0.1:8080" />
+      </div>
+      <div class="field">
+        <label>用户名</label>
+        <input id="username" autocomplete="username" />
+      </div>
+      <div class="field">
+        <label>密码</label>
+        <input id="password" type="password" autocomplete="current-password" />
+      </div>
+      <button class="btn-primary" id="loginBtn">登 录</button>
+      <div id="loginError"></div>
+    </div>
+  </div>
+
+  <!-- 主界面 -->
+  <div id="app">
+    <header class="topbar">
+      <span class="brand">PetNotify 消息中心</span>
+      <span id="connText"><span class="conn-dot" id="connDot"></span><span id="connLabel"></span></span>
+      <span class="user-chip" id="userChip"></span>
+      <button class="btn" id="logoutBtn">退出登录</button>
+    </header>
+
+    <nav class="tabs">
+      <button data-tab="messages" class="active">消息</button>
+      <button data-tab="subscriptions">订阅</button>
+      <button data-tab="settings">设置</button>
+    </nav>
+
+    <main class="content">
+      <!-- 消息 -->
+      <section class="section active" id="sec-messages">
+        <div class="toolbar">
+          <select id="filterStatus">
+            <option value="">全部</option>
+            <option value="UNREAD">未读</option>
+            <option value="READ">已读</option>
+            <option value="ACKNOWLEDGED">已确认</option>
+          </select>
+          <input id="filterTopic" placeholder="按主题过滤" style="width:200px" />
+          <button class="btn" id="refreshBtn">刷新</button>
+          <span class="spacer"></span>
+        </div>
+        <div id="messageList"></div>
+      </section>
+
+      <!-- 订阅 -->
+      <section class="section" id="sec-subscriptions">
+        <div id="subscriptionList"></div>
+      </section>
+
+      <!-- 设置 -->
+      <section class="section" id="sec-settings">
+        <div class="row-card" style="display:block">
+          <div class="setting-line">
+            <div>
+              <div class="label">声音提醒</div>
+              <div class="desc">收到重要通知时播放提示音</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="setSound" />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="setting-line">
+            <div>
+              <div class="label">免打扰</div>
+              <div class="desc">开启后不弹出气泡，消息仍会保存</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="setDnd" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 详情弹窗 -->
+  <div id="modalMask">
+    <div class="modal">
+      <h2 id="modalTitle"></h2>
+      <pre id="modalBody"></pre>
+      <div class="modal-actions">
+        <button class="btn" id="modalClose">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="message-center-renderer.js"></script>
+</body>
+</html>
